@@ -6,7 +6,7 @@ arbitrary Grafana JSON.
 """
 
 import attr
-from attr.validators import instance_of, in_
+from attr.validators import instance_of, in_, optional
 import itertools
 import math
 from numbers import Number
@@ -91,7 +91,7 @@ LIGHT_STYLE = 'light'
 
 UTC = 'utc'
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 21
 
 # Y Axis formats
 DURATION_FORMAT = "dtdurations"
@@ -251,6 +251,23 @@ class Grid(object):
             'threshold1Color': self.threshold1Color,
             'threshold2': self.threshold2,
             'threshold2Color': self.threshold2Color,
+        }
+
+
+@attr.s
+class GridPos(object):
+
+    w = attr.ib(default=None)
+    h = attr.ib(default=None)
+    x = attr.ib(default=None)
+    y = attr.ib(default=None)
+
+    def to_json_data(self):
+        return {
+            'w': self.w,
+            'h': self.h,
+            'x': self.x,
+            'y': self.y,
         }
 
 
@@ -515,7 +532,7 @@ def _balance_panels(panels):
 class Row(object):
     # TODO: jml would like to separate the balancing behaviour from this
     # layer.
-    panels = attr.ib(default=attr.Factory(list), converter=_balance_panels)
+    id = attr.ib(default=None)
     collapse = attr.ib(
         default=False, validator=instance_of(bool),
     )
@@ -530,12 +547,6 @@ class Row(object):
     title = attr.ib(default=None)
     repeat = attr.ib(default=None)
 
-    def _iter_panels(self):
-        return iter(self.panels)
-
-    def _map_panels(self, f):
-        return attr.evolve(self, panels=list(map(f, self.panels)))
-
     def to_json_data(self):
         showTitle = False
         title = "New row"
@@ -548,7 +559,6 @@ class Row(object):
             'collapse': self.collapse,
             'editable': self.editable,
             'height': self.height,
-            'panels': self.panels,
             'showTitle': showTitle,
             'title': title,
             'repeat': self.repeat,
@@ -919,7 +929,7 @@ class Alert(object):
 class Dashboard(object):
 
     title = attr.ib()
-    rows = attr.ib()
+    panels = attr.ib()
     annotations = attr.ib(
         default=attr.Factory(Annotations),
         validator=instance_of(Annotations),
@@ -957,16 +967,15 @@ class Dashboard(object):
         validator=instance_of(TimePicker),
     )
     timezone = attr.ib(default=UTC)
-    version = attr.ib(default=0)
+    version = attr.ib(default=2)
     uid = attr.ib(default=None)
 
     def _iter_panels(self):
-        for row in self.rows:
-            for panel in row._iter_panels():
-                yield panel
+        for panel in self.panels:
+            yield panel
 
     def _map_panels(self, f):
-        return attr.evolve(self, rows=[r._map_panels(f) for r in self.rows])
+        return attr.evolve(self, panels=list(map(f, self.panels)))
 
     def auto_panel_ids(self):
         """Give unique IDs all the panels without IDs.
@@ -985,15 +994,15 @@ class Dashboard(object):
 
     def to_json_data(self):
         return {
-            '__inputs': self.inputs,
+            # '__inputs': self.inputs,
             'annotations': self.annotations,
             'editable': self.editable,
             'gnetId': self.gnetId,
-            'hideControls': self.hideControls,
+            # 'hideControls': self.hideControls,
             'id': self.id,
             'links': self.links,
             'refresh': self.refresh,
-            'rows': self.rows,
+            'panels': self.panels,
             'schemaVersion': self.schemaVersion,
             'sharedCrosshair': self.sharedCrosshair,
             'style': self.style,
@@ -1105,7 +1114,6 @@ class Graph(object):
             graphObject['alert'] = self.alert
         return graphObject
 
-
 @attr.s
 class SparkLine(object):
     fillColor = attr.ib(
@@ -1118,6 +1126,9 @@ class SparkLine(object):
         validator=instance_of(RGB),
     )
     show = attr.ib(default=False, validator=instance_of(bool))
+    ymin = attr.ib(default=None, validator=optional(instance_of(int)))
+    ymax = attr.ib(default=None, validator=optional(instance_of(int)))
+
 
     def to_json_data(self):
         return {
@@ -1125,6 +1136,8 @@ class SparkLine(object):
             'full': self.full,
             'lineColor': self.lineColor,
             'show': self.show,
+            'ymin': self.ymin,
+            'ymax': self.ymax,
         }
 
 
@@ -1302,7 +1315,7 @@ class SingleStat(object):
     format = attr.ib(default="none")
     gauge = attr.ib(default=attr.Factory(Gauge),
                     validator=instance_of(Gauge))
-    height = attr.ib(default=None)
+    gridpos = attr.ib(default=None, validator=optional(instance_of(GridPos)))
     hideTimeOverride = attr.ib(default=False, validator=instance_of(bool))
     id = attr.ib(default=None)
     interval = attr.ib(default=None)
@@ -1324,7 +1337,6 @@ class SingleStat(object):
     prefixFontSize = attr.ib(default="50%")
     rangeMaps = attr.ib(default=attr.Factory(list))
     repeat = attr.ib(default=None)
-    span = attr.ib(default=6)
     sparkline = attr.ib(
         default=attr.Factory(SparkLine),
         validator=instance_of(SparkLine),
@@ -1348,10 +1360,10 @@ class SingleStat(object):
             'editable': self.editable,
             'format': self.format,
             'gauge': self.gauge,
+            'gridPos': self.gridpos,
             'id': self.id,
             'interval': self.interval,
             'links': self.links,
-            'height': self.height,
             'hideTimeOverride': self.hideTimeOverride,
             'mappingType': self.mappingType,
             'mappingTypes': self.mappingTypes,
@@ -1365,7 +1377,6 @@ class SingleStat(object):
             'prefixFontSize': self.prefixFontSize,
             'rangeMaps': self.rangeMaps,
             'repeat': self.repeat,
-            'span': self.span,
             'sparkline': self.sparkline,
             'targets': self.targets,
             'thresholds': self.thresholds,
