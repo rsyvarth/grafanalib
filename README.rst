@@ -57,10 +57,10 @@ percentile latency:
               refId='E',
             ),
           ],
-          yAxes=[
+          yAxes=G.YAxes(
             YAxis(format=OPS_FORMAT),
             YAxis(format=SHORT_FORMAT),
-          ],
+          ),
           alert=Alert(
             name="Too many 500s on Nginx",
             message="More than 5 QPS of 500s on Nginx for 5 minutes",
@@ -103,6 +103,7 @@ percentile latency:
 There is a fair bit of repetition here, but once you figure out what works for
 your needs, you can factor that out.
 See `our Weave-specific customizations <grafanalib/weave.py>`_ for inspiration.
+You will find other examples in the `docs folder <docs/>`_. For `elasticsearch <docs/example-elasticsearch.dashboard.py>`_ and for `cloudwatch <docs/example-cloudwatch.dashboard.py>`_.
 
 Generating dashboards
 =====================

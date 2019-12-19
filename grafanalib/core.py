@@ -355,6 +355,32 @@ class InfluxDBTarget(object):
 
 
 @attr.s
+class InfluxDBTarget(object):
+    """
+    Metric to show.
+
+    :param target: Graphite way to select data
+    """
+
+    query = attr.ib(default="")
+    format = attr.ib(default=TIME_SERIES_TARGET_FORMAT)
+    alias = attr.ib(default="")
+    measurement = attr.ib(default="")
+    rawQuery = True
+    refId = attr.ib(default="")
+
+    def to_json_data(self):
+        return {
+            'query': self.query,
+            'resultFormat': self.format,
+            'alias': self.alias,
+            'measurement': self.measurement,
+            'rawQuery': self.rawQuery,
+            'refId': self.refId
+        }
+
+
+@attr.s
 class Tooltip(object):
 
     msResolution = attr.ib(default=True, validator=instance_of(bool))
@@ -480,7 +506,7 @@ def _balance_panels(panels):
     auto_span = math.ceil(
         (TOTAL_SPAN - allotted_spans) / (len(no_span_set) or 1))
     return [
-        attr.assoc(panel, span=auto_span) if panel.span is None else panel
+        attr.evolve(panel, span=auto_span) if panel.span is None else panel
         for panel in panels
     ]
 
@@ -489,7 +515,7 @@ def _balance_panels(panels):
 class Row(object):
     # TODO: jml would like to separate the balancing behaviour from this
     # layer.
-    panels = attr.ib(default=attr.Factory(list), convert=_balance_panels)
+    panels = attr.ib(default=attr.Factory(list), converter=_balance_panels)
     collapse = attr.ib(
         default=False, validator=instance_of(bool),
     )
@@ -508,7 +534,7 @@ class Row(object):
         return iter(self.panels)
 
     def _map_panels(self, f):
-        return attr.assoc(self, panels=list(map(f, self.panels)))
+        return attr.evolve(self, panels=list(map(f, self.panels)))
 
     def to_json_data(self):
         showTitle = False
@@ -940,7 +966,7 @@ class Dashboard(object):
                 yield panel
 
     def _map_panels(self, f):
-        return attr.assoc(self, rows=[r._map_panels(f) for r in self.rows])
+        return attr.evolve(self, rows=[r._map_panels(f) for r in self.rows])
 
     def auto_panel_ids(self):
         """Give unique IDs all the panels without IDs.
@@ -954,7 +980,7 @@ class Dashboard(object):
         auto_ids = (i for i in itertools.count(1) if i not in ids)
 
         def set_id(panel):
-            return panel if panel.id else attr.assoc(panel, id=next(auto_ids))
+            return panel if panel.id else attr.evolve(panel, id=next(auto_ids))
         return self._map_panels(set_id)
 
     def to_json_data(self):
@@ -1033,7 +1059,7 @@ class Graph(object):
     # XXX: This isn't a *good* default, rather it's the default Grafana uses.
     yAxes = attr.ib(
         default=attr.Factory(YAxes),
-        convert=to_y_axes,
+        converter=to_y_axes,
         validator=instance_of(YAxes),
     )
     alert = attr.ib(default=None)
