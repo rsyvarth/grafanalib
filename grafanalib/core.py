@@ -539,10 +539,7 @@ class Row(object):
     editable = attr.ib(
         default=True, validator=instance_of(bool),
     )
-    height = attr.ib(
-        default=attr.Factory(lambda: DEFAULT_ROW_HEIGHT),
-        validator=instance_of(Pixels),
-    )
+    gridpos = attr.ib(default=None, validator=instance_of(GridPos))
     showTitle = attr.ib(default=None)
     title = attr.ib(default=None)
     repeat = attr.ib(default=None)
@@ -556,12 +553,11 @@ class Row(object):
         if self.showTitle is not None:
             showTitle = self.showTitle
         return {
-            'collapse': self.collapse,
-            'editable': self.editable,
-            'height': self.height,
-            'showTitle': showTitle,
+            'type': 'row',
+            'id': self.id,
+            'datasource': None,
+            'gridPos': self.gridpos,
             'title': title,
-            'repeat': self.repeat,
         }
 
 
@@ -966,7 +962,7 @@ class Dashboard(object):
         default=attr.Factory(lambda: DEFAULT_TIME_PICKER),
         validator=instance_of(TimePicker),
     )
-    timezone = attr.ib(default=UTC)
+    timezone = attr.ib(default=None)
     version = attr.ib(default=2)
     uid = attr.ib(default=None)
 
