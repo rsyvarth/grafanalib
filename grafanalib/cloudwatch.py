@@ -31,6 +31,9 @@ class CloudwatchTarget(object):
     period = attr.ib(default="")
     region = attr.ib(default="default")
     refId = attr.ib(default="")
+    id = attr.ib(default="")
+    expression = attr.ib(default="")
+    hide = attr.ib(default=False, validator=instance_of(bool))
     statistics = attr.ib(default=["Average"], validator=instance_of(list))
     checkParams = attr.ib(default=True, validator=instance_of(bool))
 
@@ -41,9 +44,10 @@ class CloudwatchTarget(object):
         data = {
             "alias": self.alias,
             "dimensions": self.dimensions,
-            "expression": "",
+            "expression": self.expression,
             "highResolution": False,
-            "id": "",
+            "id": self.id,
+            "hide": self.hide,
             "metricName": self.metricName,
             "namespace": self.namespace,
             "period": self.period,
@@ -57,15 +61,8 @@ class CloudwatchTarget(object):
         return data
 
     def __checkParameters(self):
-        self.__checkDimensions()
         self.__checkNamespace()
         self.__checkRegion()
-
-    def __checkDimensions(self):
-        if self.dimensions == {}:
-            raise Exception(
-                'You need to define a valid non empty dimensions dict variable'
-            )
 
     def __checkNamespace(self):
         if not (self.namespace in validNamespaces):
