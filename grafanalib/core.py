@@ -1054,6 +1054,7 @@ class Graph(object):
     span = attr.ib(default=None)
     stack = attr.ib(default=False, validator=instance_of(bool))
     steppedLine = attr.ib(default=False, validator=instance_of(bool))
+    thresholds = attr.ib(default=None)
     timeFrom = attr.ib(default=None)
     timeShift = attr.ib(default=None)
     tooltip = attr.ib(
@@ -1099,6 +1100,7 @@ class Graph(object):
             'stack': self.stack,
             'steppedLine': self.steppedLine,
             'targets': self.targets,
+            'thresholds': self.thresholds,
             'timeFrom': self.timeFrom,
             'timeShift': self.timeShift,
             'title': self.title,
